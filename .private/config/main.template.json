@@ -3,9 +3,9 @@
 		"logLevel": 2
 	},
 
-	"pinchThreshold": 0.04,
-	"smoothing": 0.3,
-	"dragTime": 0.3,
+	"pinchThreshold": 0.045,
+	"smoothing": 0.75,
+	"dragTime": 0.25,
 	"rightClickCooldown": 0.5,
-	"doubleClickTime": 0.35
+	"doubleClickTime": 0.5
 }
