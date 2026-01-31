@@ -41,7 +41,6 @@ class CXB_Camera():
 			for item in subList:
 				if item == id:
 					print(subList[0])
-					# If it does not have the ammount of indexes needed; return the `None` element
 					return subList[0]
 
 		return self.attachedList[0][0]
@@ -58,6 +57,13 @@ class CXB_Camera():
 			result = self.getAttached("main-hands").hands.process(rgb)
 
 			if result.multi_hand_landmarks:
+				for handLms in result.multi_hand_landmarks:
+					self.getAttached("main-hands").mpDraw.draw_landmarks(
+							frame,
+							handLms,
+							self.getAttached("main-hands").mpHands.HAND_CONNECTIONS
+							)
+
 				lm = result.multi_hand_landmarks[0].landmark
 
 				# Cursor data and cursor modifications
@@ -66,6 +72,9 @@ class CXB_Camera():
 
 				x = int(configLoader.CSMOOTHING * targetX + (1 - configLoader.CSMOOTHING) * self.prevX)
 				y = int(configLoader.CSMOOTHING * targetY + (1 - configLoader.CSMOOTHING) * self.prevY)
+
+				self.prevX = x
+				self.prevX = y
 
 				self.getAttached("main-sysController").move(x, y)
 
@@ -94,6 +103,12 @@ class CXB_Camera():
 							self.getAttached("main-sysController").mouseController.click(Button.left)
 
 						self.lastClickTime = timeNow
+
+				if self.pinchActive:
+					if timeNow - self.pinchStartTime > configLoader.CDRAG_TIME:
+						self.getAttached("main-sysController").mouseController.press(Button.left)
+
+				else: self.getAttached("main-sysController").mouseController.release(Button.left)
 
 			cv2.imshow("CXB Camera", frame)
 
