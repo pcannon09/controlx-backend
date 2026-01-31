@@ -1,0 +1,11 @@
+{
+	"system": {
+		"logLevel": 2
+	},
+
+	"pinchThreshold": 0.04,
+	"smoothing": 0.3,
+	"dragTime": 0.3,
+	"rightClickCooldown": 0.5,
+	"doubleClickTime": 0.35
+}
