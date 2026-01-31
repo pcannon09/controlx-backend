@@ -120,11 +120,41 @@ class CXB_Camera():
 
 						self.lastClickTime = timeNow
 
+				# OPEN HAND = RIGHT CLICK
+				openFingers = [
+					CXB_Utils.fingerOpen(lm[8], lm[5]),		# index
+					CXB_Utils.fingerOpen(lm[12], lm[9]),  	# middle
+					CXB_Utils.fingerOpen(lm[16], lm[13]), 	# ring
+					CXB_Utils.fingerOpen(lm[20], lm[17])  	# pinky
+				]
+
+				isOpenHand = all(openFingers) and not isPinch
+
+				isRightClick = not isOpenHand and timeNow - self.lastClickTime > configLoader.CDBL_CLICK_TIME
+				isLeftClick = self.pinchActive and not self.dragging
+
 				# Drag activation
-				if self.pinchActive and not self.dragging:
+				if isLeftClick and not isRightClick:
 					if timeNow - self.pinchStartTime > configLoader.CDRAG_TIME:
 						mc.press(Button.left)
+
 						self.dragging = True
+
+				else: mc.release(Button.left)
+
+				# if isRightClick:
+				# 	mc.click(Button.right)
+				#
+				# 	self.lastClickTime = timeNow
+				#
+				# else: mc.release(Button.right)
+
+				# Visual feedback
+				handsEngine.mpDraw.draw_landmarks(frame, result.multi_hand_landmarks[0], handsEngine.mpHands.HAND_CONNECTIONS)
+
+				if isPinch:
+					cv2.circle(frame, (int(lm[8].x * frame.shape[1]), int(lm[8].y * frame.shape[0])), 15, (0,255,0), -1)
+				elif isOpenHand: cv2.putText(frame, "Right Click", (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
 
 			cv2.imshow("CXB Camera", frame)
 
