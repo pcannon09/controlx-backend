@@ -4,7 +4,7 @@
 	},
 
 	"pinchThreshold": 0.04,
-	"smoothing": 0.3,
+	"smoothing": 0.15,
 	"dragTime": 0.3,
 	"rightClickCooldown": 0.5,
 	"doubleClickTime": 0.35
