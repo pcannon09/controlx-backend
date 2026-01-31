@@ -11,9 +11,10 @@ def main() -> int:
 	cam = CXB_Camera("controlx_backend-camera")
 	cam.attach(gestureEngine, "main-hands")
 	cam.attach(sysController, "main-sysController")
-	cam.run()
 
 	log(f"Camera initialized with ID of: {cam.id}", 4)
+
+	cam.run()
 
 	return 0
 
