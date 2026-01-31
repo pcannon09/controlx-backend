@@ -15,10 +15,10 @@ def getJSON(path: str) -> tuple[Any, bool]:
 
 jsonConfigFile = getJSON(".private/config/main.json")[0]
 
-CSMOOTHING = int(jsonConfigFile["smoothing"])
-CPINCH_THRESHOLD = int(jsonConfigFile["pinchThreshold"])
-CDRAG_TIME = int(jsonConfigFile["dragTime"])
-CDBL_CLICK_TIME = int(jsonConfigFile["doubleClickTime"])
+CSMOOTHING = float(jsonConfigFile["smoothing"])
+CPINCH_THRESHOLD = float(jsonConfigFile["pinchThreshold"])
+CDRAG_TIME = float(jsonConfigFile["dragTime"])
+CDBL_CLICK_TIME = float(jsonConfigFile["doubleClickTime"])
 
 monitorInfo = getAll()[0]
 
