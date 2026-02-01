@@ -4,8 +4,8 @@
 	},
 
 	"pinchThreshold": 0.045,
-	"smoothing": 0.75,
-	"dragTime": 0.25,
+	"smoothing": 0.5,
+	"dragTime": 1,
 	"rightClickCooldown": 0.5,
 	"doubleClickTime": 0.5,
 	"scrollSpeed": 0.05,
