@@ -49,13 +49,31 @@ class CXB_Camera():
 
 		return self.attachedList[0][0]
 
+	def fingersUp(self, lm):
+		# Returns list of bools: [thumb, index, middle, ring, pinky]
+		tips = [4, 8, 12, 16, 20]
+		pip = [3, 6, 10, 14, 18]
+
+		fingers = []
+
+		# Right hand
+		if configLoader.CDEFAULT_HAND == "right":
+			fingers.append(lm[tips[0]].x < lm[pip[0]].x)
+
+		# Left hand
+		else: fingers.append(lm[tips[0]].x > lm[pip[0]].x)
+
+		# Other fingers: y comparison
+		for i in range(1, 5):
+			fingers.append(lm[tips[i]].y < lm[pip[i]].y)
+
+		return fingers
+
 	def run(self):
 		mc = self.getAttached("main-sysController").mouseController
 		handsEngine = self.getAttached("main-hands")
 
-		# (X) seconds to complete 3 clicks
-		# TODO: Add it in config
-		TRIPLE_CLICK_WINDOW = 0.7
+		TRIPLE_CLICK_WINDOW = 0.7  # seconds
 
 		while self.cap.isOpened():
 			ret, frame = self.cap.read()
@@ -70,16 +88,17 @@ class CXB_Camera():
 			if result.multi_hand_landmarks:
 				handLms = result.multi_hand_landmarks[0]
 				handsEngine.mpDraw.draw_landmarks(
-					frame,
-					handLms,
-					handsEngine.mpHands.HAND_CONNECTIONS
+					frame, handLms, handsEngine.mpHands.HAND_CONNECTIONS
 				)
 
 				lm = handLms.landmark
 
+				fingers = self.fingersUp(lm)
+				isV = fingers[1] and fingers[2] and not fingers[0] and not fingers[3] and not fingers[4]
+
 				# Cursor movement
-				ix = (lm[5].x + lm[8].x) / 2
-				iy = (lm[5].y + lm[8].y) / 2
+				ix = (lm[9].x + lm[12].x) / 2
+				iy = (lm[9].y + lm[12].y) / 2
 
 				targetX = int(ix * configLoader.monitorInfo.width)
 				targetY = int(iy * configLoader.monitorInfo.height)
@@ -89,7 +108,29 @@ class CXB_Camera():
 				y = int(self.prevY + alpha * (targetY - self.prevY))
 
 				self.prevX, self.prevY = x, y
-				mc.position = (x, y)
+
+				# Two-finger V scroll
+				if isV:
+					currentX = (lm[8].x + lm[12].x) / 2 * configLoader.monitorInfo.width
+					currentY = (lm[8].y + lm[12].y) / 2 * configLoader.monitorInfo.height
+
+					if hasattr(self, 'prevScrollX') and hasattr(self, 'prevScrollY') and self.prevScrollX is not None:
+						deltaX = currentX - self.prevScrollX
+						deltaY = currentY - self.prevScrollY
+
+						# Use scrollSpeed multiplier from config
+						mc.scroll(int(-deltaY * configLoader.CSCROLL_SPEED), int(deltaX * configLoader.CSCROLL_SPEED))
+
+					self.prevScrollX = currentX
+					self.prevScrollY = currentY
+
+				else:
+					self.prevScrollX = None
+					self.prevScrollY = None
+
+				# Update cursor only if not scrolling
+				if not isV and fingers:
+					mc.position = (x, y)
 
 				# Pinch detection
 				thumbTip = lm[4]
@@ -102,43 +143,37 @@ class CXB_Camera():
 
 				isPinch = pinchDistance < configLoader.CPINCH_THRESHOLD
 
-				# Pinch start
 				if isPinch and not self.pinchActive:
 					self.pinchActive = True
 					self.pinchStartTime = timeNow
 
-				# Pinch release (click logic)
 				elif not isPinch and self.pinchActive:
 					self.pinchActive = False
 					duration = timeNow - self.pinchStartTime
 
-					# Long pinch is drag end
-					if duration >= configLoader.CDRAG_TIME:
-						if self.dragging:
-							mc.release(Button.left)
-							self.dragging = False
+					if duration >= configLoader.CDRAG_TIME and self.dragging:
+						mc.release(Button.left)
+						self.dragging = False
 						continue
 
-					# Short pinch is air click
 					if timeNow - self.lastAirClickTime > TRIPLE_CLICK_WINDOW:
 						self.airClickCount = 0
 
 					self.airClickCount += 1
 					self.lastAirClickTime = timeNow
 
-					# Triple click; RIGHT CLICK
 					if self.airClickCount == 3:
 						mc.click(Button.right)
 						self.airClickCount = 0
+
 						continue
 
-					# Double click; double left
-					if self.airClickCount == 2:
+					elif self.airClickCount == 2:
 						mc.click(Button.left, 2)
+
 						continue
 
-					# Single click; left click
-					if self.airClickCount == 1:
+					elif self.airClickCount == 1:
 						mc.click(Button.left)
 
 				# Drag activation
