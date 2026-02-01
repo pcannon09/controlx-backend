@@ -20,12 +20,20 @@ class CXB_Camera():
 
 		self.id: str = id
 
-		self.prevX: float = 0
-		self.prevY: float = 0
-		self.pinchStartTime: float = 0
-		self.lastClickTime: float = 0
+		self.prevX = 0
+		self.prevY = 0
 
-		self.pinchActive: bool = False
+		self.pinchActive = False
+		self.pinchStartTime = 0
+		self.lastClickTime = 0
+		self.dragging = False
+
+		self.rightClickActive = False
+		self.rightClickStartTime = 0
+		self.lastRightClickTime = 0
+
+		self.airClickCount = 0
+		self.lastAirClickTime = 0
 
 	def attach(self, elem, id: str):
 		self.attachedList.append([elem, id])
@@ -45,44 +53,42 @@ class CXB_Camera():
 		mc = self.getAttached("main-sysController").mouseController
 		handsEngine = self.getAttached("main-hands")
 
-		self.dragging = False
+		# (X) seconds to complete 3 clicks
+		# TODO: Add it in config
+		TRIPLE_CLICK_WINDOW = 0.7
 
 		while self.cap.isOpened():
 			ret, frame = self.cap.read()
 			if not ret:
 				break
 
-			# Mirror camera
 			frame = cv2.flip(frame, 1)
 			rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 			result = handsEngine.hands.process(rgb)
+			timeNow = time.time()
 
 			if result.multi_hand_landmarks:
-				for handLms in result.multi_hand_landmarks:
-					handsEngine.mpDraw.draw_landmarks(
-						frame,
-						handLms,
-						handsEngine.mpHands.HAND_CONNECTIONS
-					)
+				handLms = result.multi_hand_landmarks[0]
+				handsEngine.mpDraw.draw_landmarks(
+					frame,
+					handLms,
+					handsEngine.mpHands.HAND_CONNECTIONS
+				)
 
-				lm = result.multi_hand_landmarks[0].landmark
+				lm = handLms.landmark
 
-				# Finger position
+				# Cursor movement
 				ix = (lm[5].x + lm[8].x) / 2
 				iy = (lm[5].y + lm[8].y) / 2
 
 				targetX = int(ix * configLoader.monitorInfo.width)
 				targetY = int(iy * configLoader.monitorInfo.height)
 
-				# EMA smoothing
 				alpha = configLoader.CSMOOTHING
-
 				x = int(self.prevX + alpha * (targetX - self.prevX))
 				y = int(self.prevY + alpha * (targetY - self.prevY))
 
 				self.prevX, self.prevY = x, y
-
-				# Absolute cursor move
 				mc.position = (x, y)
 
 				# Pinch detection
@@ -95,66 +101,72 @@ class CXB_Camera():
 				)
 
 				isPinch = pinchDistance < configLoader.CPINCH_THRESHOLD
-				timeNow = time.time()
 
 				# Pinch start
 				if isPinch and not self.pinchActive:
 					self.pinchActive = True
 					self.pinchStartTime = timeNow
 
-				# Pinch release
+				# Pinch release (click logic)
 				elif not isPinch and self.pinchActive:
 					self.pinchActive = False
-
 					duration = timeNow - self.pinchStartTime
 
-					if self.dragging:
-						mc.release(Button.left)
+					# Long pinch is drag end
+					if duration >= configLoader.CDRAG_TIME:
+						if self.dragging:
+							mc.release(Button.left)
+							self.dragging = False
+						continue
 
-						self.dragging = False
+					# Short pinch is air click
+					if timeNow - self.lastAirClickTime > TRIPLE_CLICK_WINDOW:
+						self.airClickCount = 0
 
-					elif duration < configLoader.CDRAG_TIME:
-						if timeNow - self.lastClickTime < configLoader.CDBL_CLICK_TIME:
-							mc.click(Button.left, 2)
-						else: mc.click(Button.left)
+					self.airClickCount += 1
+					self.lastAirClickTime = timeNow
 
-						self.lastClickTime = timeNow
+					# Triple click; RIGHT CLICK
+					if self.airClickCount == 3:
+						mc.click(Button.right)
+						self.airClickCount = 0
+						continue
 
-				# OPEN HAND = RIGHT CLICK
-				openFingers = [
-					CXB_Utils.fingerOpen(lm[8], lm[5]),		# index
-					CXB_Utils.fingerOpen(lm[12], lm[9]),  	# middle
-					CXB_Utils.fingerOpen(lm[16], lm[13]), 	# ring
-					CXB_Utils.fingerOpen(lm[20], lm[17])  	# pinky
-				]
+					# Double click; double left
+					if self.airClickCount == 2:
+						mc.click(Button.left, 2)
+						continue
 
-				isOpenHand = all(openFingers) and not isPinch
-
-				isRightClick = not isOpenHand and timeNow - self.lastClickTime > configLoader.CDBL_CLICK_TIME
-				isLeftClick = self.pinchActive and not self.dragging
+					# Single click; left click
+					if self.airClickCount == 1:
+						mc.click(Button.left)
 
 				# Drag activation
-				if isLeftClick and not isRightClick:
+				if self.pinchActive and not self.dragging:
 					if timeNow - self.pinchStartTime > configLoader.CDRAG_TIME:
 						mc.press(Button.left)
-
 						self.dragging = True
 
-				else: mc.release(Button.left)
-
-				# if isRightClick:
-				# 	mc.click(Button.right)
-				#
-				# 	self.lastClickTime = timeNow
-				#
-				# else: mc.release(Button.right)
-
 				# Visual feedback
-				handsEngine.mpDraw.draw_landmarks(frame, result.multi_hand_landmarks[0], handsEngine.mpHands.HAND_CONNECTIONS)
+				if self.pinchActive:
+					cv2.circle(
+						frame,
+						(int(lm[8].x * frame.shape[1]), int(lm[8].y * frame.shape[0])),
+						15,
+						(0, 255, 0),
+						-1
+					)
 
-				if isPinch:
-					cv2.circle(frame, (int(lm[8].x * frame.shape[1]), int(lm[8].y * frame.shape[0])), 15, (0,255,0), -1)
-				elif isOpenHand: cv2.putText(frame, "Right Click", (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
+				if self.airClickCount > 0:
+					cv2.putText(
+						frame,
+						f"Clicks: {self.airClickCount}",
+						(50, 50),
+						cv2.FONT_HERSHEY_SIMPLEX,
+						1,
+						(255, 255, 0),
+						2
+					)
 
 			cv2.imshow("CXB Camera", frame)
 
@@ -163,5 +175,4 @@ class CXB_Camera():
 
 		self.cap.release()
 		cv2.destroyAllWindows()
-
 
