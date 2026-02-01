@@ -21,4 +21,5 @@ class CXB_SysController:
 		self.mouseController.click(type, count)
 
 	def getLastPos(self) -> tuple: return self.lastMousePos
+	def scroll(self, x: int = 0, y: int = 0): self.mouseController.scroll(x, y)
 
