@@ -97,11 +97,11 @@ class CXB_Camera():
 				isV = fingers[1] and fingers[2] and not fingers[0] and not fingers[3] and not fingers[4]
 
 				# Cursor movement
-				ix = (lm[9].x + lm[12].x) / 2
-				iy = (lm[9].y + lm[12].y) / 2
+				ix = (lm[8].x + lm[8].x) / 2
+				iy = (lm[8].y + lm[8].y) / 2
 
-				targetX = int(ix * configLoader.monitorInfo.width)
-				targetY = int(iy * configLoader.monitorInfo.height)
+				targetX = max(0, min(int(ix * configLoader.monitorInfo.width), configLoader.monitorInfo.width - 1))
+				targetY = max(0, min(int(iy * configLoader.monitorInfo.height), configLoader.monitorInfo.height - 1))
 
 				alpha = configLoader.CSMOOTHING
 				x = int(self.prevX + alpha * (targetX - self.prevX))
