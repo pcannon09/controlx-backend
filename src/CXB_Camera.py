@@ -97,7 +97,6 @@ class CXB_Camera():
 				handsEngine.mpDraw.draw_landmarks(
 					frame, handLms, handsEngine.mpHands.HAND_CONNECTIONS
 				)
-				print(self.getAvailableLms(handLms))
 
 				lm = handLms.landmark
 
@@ -105,7 +104,6 @@ class CXB_Camera():
 				isV = fingers[1] and fingers[2] and not fingers[0] and not fingers[3] and not fingers[4]
 
 				# Cursor movement
-				print(len(handsEngine.mpHands.HAND_CONNECTIONS))
 				cursorPointLandmark = 8;
 
 				ix = (lm[cursorPointLandmark].x + lm[cursorPointLandmark].x) / 2
