@@ -3,6 +3,7 @@ from typing import Any
 import time
 
 import cv2
+import mediapipe.python.solutions.pose as solutions_pose
 
 from pynput.mouse import Button, Controller
 
@@ -69,6 +70,11 @@ class CXB_Camera():
 
 		return fingers
 
+	def getAvailableLms(self, landmarks) -> int:
+		available: int = 0
+
+		return available
+
 	def run(self):
 		mc = self.getAttached("main-sysController").mouseController
 		handsEngine = self.getAttached("main-hands")
@@ -77,6 +83,7 @@ class CXB_Camera():
 
 		while self.cap.isOpened():
 			ret, frame = self.cap.read()
+
 			if not ret:
 				break
 
@@ -90,6 +97,7 @@ class CXB_Camera():
 				handsEngine.mpDraw.draw_landmarks(
 					frame, handLms, handsEngine.mpHands.HAND_CONNECTIONS
 				)
+				print(self.getAvailableLms(handLms))
 
 				lm = handLms.landmark
 
@@ -97,11 +105,14 @@ class CXB_Camera():
 				isV = fingers[1] and fingers[2] and not fingers[0] and not fingers[3] and not fingers[4]
 
 				# Cursor movement
-				ix = (lm[8].x + lm[8].x) / 2
-				iy = (lm[8].y + lm[8].y) / 2
+				print(len(handsEngine.mpHands.HAND_CONNECTIONS))
+				cursorPointLandmark = 8;
 
-				targetX = max(0, min(int(ix * configLoader.monitorInfo.width), configLoader.monitorInfo.width - 1))
-				targetY = max(0, min(int(iy * configLoader.monitorInfo.height), configLoader.monitorInfo.height - 1))
+				ix = (lm[cursorPointLandmark].x + lm[cursorPointLandmark].x) / 2
+				iy = (lm[cursorPointLandmark].y + lm[cursorPointLandmark].y) / 2
+
+				targetX = min(int(ix * configLoader.monitorInfo.width), configLoader.monitorInfo.width - 1)
+				targetY = min(int(iy * configLoader.monitorInfo.height), configLoader.monitorInfo.height - 1)
 
 				alpha = configLoader.CSMOOTHING
 				x = int(self.prevX + alpha * (targetX - self.prevX))
@@ -111,8 +122,8 @@ class CXB_Camera():
 
 				# Two-finger V scroll
 				if isV:
-					currentX = (lm[8].x + lm[12].x) / 2 * configLoader.monitorInfo.width
-					currentY = (lm[8].y + lm[12].y) / 2 * configLoader.monitorInfo.height
+					currentX = (lm[8].x + lm[10].x) / 2 * configLoader.monitorInfo.width
+					currentY = (lm[8].y + lm[10].y) / 2 * configLoader.monitorInfo.height
 
 					if hasattr(self, 'prevScrollX') and hasattr(self, 'prevScrollY') and self.prevScrollX is not None:
 						deltaX = currentX - self.prevScrollX
