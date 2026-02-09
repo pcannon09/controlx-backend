@@ -36,8 +36,12 @@ class CXB_Camera():
 		self.airClickCount = 0
 		self.lastAirClickTime = 0
 
+	def remap(self, value, inMin, inMax, outMin, outMax):
+		return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin
+
 	def attach(self, elem, id: str):
 		self.attachedList.append([elem, id])
+
 		log(f"{self.id}: Attached element with ID of: {id}", 3)
 
 	def getAttached(self, id) -> Any:
@@ -104,13 +108,21 @@ class CXB_Camera():
 				isV = fingers[1] and fingers[2] and not fingers[0] and not fingers[3] and not fingers[4]
 
 				# Cursor movement
-				cursorPointLandmark = 8;
+				cursorPointLandmark = 11;
 
-				ix = (lm[cursorPointLandmark].x + lm[cursorPointLandmark].x) / 2
-				iy = (lm[cursorPointLandmark].y + lm[cursorPointLandmark].y) / 2
+				ix = lm[cursorPointLandmark].x
+				iy = lm[cursorPointLandmark].y
 
-				targetX = min(int(ix * configLoader.monitorInfo.width), configLoader.monitorInfo.width - 1)
-				targetY = min(int(iy * configLoader.monitorInfo.height), configLoader.monitorInfo.height - 1)
+				# Clamp to usable camera area
+				ix = max(configLoader.CCAMERA_MARGIN, min(1 - configLoader.CCAMERA_MARGIN, ix))
+				iy = max(configLoader.CCAMERA_MARGIN, min(1 - configLoader.CCAMERA_MARGIN, iy))
+
+				# Remap to full screen
+				ix = self.remap(ix, configLoader.CCAMERA_MARGIN, 1 - configLoader.CCAMERA_MARGIN, 0, 1)
+				iy = self.remap(iy, configLoader.CCAMERA_MARGIN, 1 - configLoader.CCAMERA_MARGIN, 0, 1)
+
+				targetX = int(ix * configLoader.monitorInfo.width)
+				targetY = int(iy * configLoader.monitorInfo.height)
 
 				alpha = configLoader.CSMOOTHING
 				x = int(self.prevX + alpha * (targetX - self.prevX))
