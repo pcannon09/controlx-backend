@@ -21,6 +21,7 @@ CDRAG_TIME = float(jsonConfigFile["dragTime"])
 CDBL_CLICK_TIME = float(jsonConfigFile["doubleClickTime"])
 CSCROLL_SPEED = float(jsonConfigFile["scrollSpeed"])
 CDEFAULT_HAND = str(jsonConfigFile["hand"])
+CCAMERA_MARGIN = float(jsonConfigFile["cameraMargin"]) # (X)% on each side; 0.08 -> 8%
 
 monitorInfo = getAll()[0]
 
