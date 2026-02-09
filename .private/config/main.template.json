@@ -4,10 +4,12 @@
 	},
 
 	"pinchThreshold": 0.045,
-	"smoothing": 0.75,
-	"dragTime": 0.25,
+	"smoothing": 0.4,
+	"dragTime": 0.75,
 	"rightClickCooldown": 0.5,
 	"doubleClickTime": 0.5,
-	"scrollSpeed": 0.05,
-	"hand": "right"
+	"scrollSpeed": 0.1,
+	"hand": "right",
+	"cameraMargin": 0.20
 }
+

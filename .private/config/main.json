@@ -9,5 +9,6 @@
 	"rightClickCooldown": 0.5,
 	"doubleClickTime": 0.5,
 	"scrollSpeed": 0.1,
-	"hand": "right"
+	"hand": "right",
+	"cameraMargin": 0.20
 }
