@@ -3,9 +3,8 @@ from typing import Any
 import time
 
 import cv2
-import mediapipe.python.solutions.pose as solutions_pose
 
-from pynput.mouse import Button, Controller
+from pynput.mouse import Button
 
 from .modules.CXB_Logger import log
 
@@ -73,11 +72,6 @@ class CXB_Camera():
 			fingers.append(lm[tips[i]].y < lm[pip[i]].y)
 
 		return fingers
-
-	def getAvailableLms(self, landmarks) -> int:
-		available: int = 0
-
-		return available
 
 	def run(self):
 		mc = self.getAttached("main-sysController").mouseController

@@ -1,4 +1,3 @@
-import mediapipe as mp
 import mediapipe.python.solutions.hands as solutions_hands
 import mediapipe.python.solutions.drawing_utils as drawing_utils
 
